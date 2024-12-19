@@ -1,0 +1,79 @@
+apply plugin: 'com.android.application'
+
+android {
+    compileSdkVersion 30
+    buildToolsVersion "30.0.3"
+
+    defaultConfig {
+        applicationId "com.posio.printerclient"
+        minSdkVersion 21
+        targetSdkVersion 30
+        versionCode 1
+        versionName "1.0.5"
+    }
+
+    signingConfigs {
+        release {
+            keyAlias 'posio_demo'
+            keyPassword '111111'
+            storeFile file('../key/posio_demo.jks')
+            storePassword '111111'
+        }
+    }
+
+    buildTypes {
+        release {
+            debuggable false
+            jniDebuggable false
+            zipAlignEnabled true
+            shrinkResources true
+            minifyEnabled true
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+            signingConfig signingConfigs.release
+        }
+        debug {
+            signingConfig signingConfigs.release
+        }
+    }
+
+    sourceSets {
+        main {
+            jniLibs.srcDirs = ['libs']
+        }
+    }
+
+    compileOptions {
+        targetCompatibility JavaVersion.VERSION_1_8
+        sourceCompatibility JavaVersion.VERSION_1_8
+    }
+
+    lintOptions {
+        disable 'HardcodedText'
+        disable 'ContentDescription'
+    }
+
+
+    applicationVariants.all { variant ->
+        if (variant.buildType.name != "debug") {
+            variant.getPackageApplicationProvider().get().outputDirectory = new File(project.rootDir.absolutePath + "/apk")
+        }
+        variant.outputs.all { output ->
+            outputFileName = "${((project.name != "app") ? project.name : rootProject.name)}" +
+                    //"-${variant.productFlavors[0].name}" +
+                    "-${variant.buildType.name}" +
+                    "_v${variant.versionName}" +
+                    "_${new Date().format("yyyy-MM-dd")}" +
+                    ".apk"
+        }
+    }
+}
+
+dependencies {
+    implementation fileTree(include: ['*.jar', '*.aar'], dir: 'libs')
+    implementation 'androidx.appcompat:appcompat:1.0.2'
+    implementation 'androidx.constraintlayout:constraintlayout:1.1.3'
+    // https://github.com/JakeWharton/timber
+    implementation 'com.jakewharton.timber:timber:4.7.1'
+    // https://github.com/zxing/zxing
+    implementation 'com.google.zxing:core:3.2.1'
+}

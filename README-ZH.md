@@ -1,28 +1,30 @@
-[中文文档](README-ZH.md)
-
 PrinterClient
 ==========
-### 
-The demo for Android Studio has full functionality, such as printing text, printing barcodes, printing qr code, printing pictures, LCD, cash box and scanning. Please import project by Android Studio to get the detailed instructions for use.
+###
+该Demo详细展示了Pos主要功能，包含：
+- 打印：文本，图片，条形码/二维码，表格，标签，ESC/POS指令
+- 客显屏
+- 扫码：摄像头扫码，红外线扫码
+- NFC
 ###
 
-## Printer SDK integration
-Printer SDK is using AIDL integration. About AIDL, please refer to [https://developer.android.com/guide/components/aidl](https://developer.android.com/guide/components/aidl)
+## 打印SDK集成
+Demo使用AIDL进行集成。有关AIDL，请参考 [https://developer.android.com/guide/components/aidl](https://developer.android.com/guide/components/aidl)
 
-### Integration file description
+### 主要文件说明
 - [com.posio.printerservice.print.IPrinterService.aidl](app/src/main/aidl/com/posio/printerservice/print/IPrinterService.aidl) —— the aidl interface for all printer functions
 - [com.posio.printerservice.print.PrintTextFormat.aidl](app/src/main/aidl/com/posio/printerservice/print/PrintTextFormat.aidl) —— the aidl bean class to set the print text style
 - [com.posio.printerservice.print.PrintTextFormat.java](app/src/main/java/com/posio/printerservice/print/PrintTextFormat.java) —— the java bean class to set the print text style
 
-### Integration
-1. Add the above three files to the project and cannot modify the package path and package name
-2. Add query tag in `AndroidManifest.xml` to adapt `android 11 package visibility` for Android 12 platform
+### 集成
+1. 在项⽬中添加上述三个⽂件且不能修改包路径和包名
+2. Android12在`AndroidManifest.xml`添加标签以适配 `android 11 package visibility`
 ```xml
 <queries>
     <package android:name="com.posio.printerservice"/>
 </queries>
 ```
-3. Bind printer AIDL service
+3. 绑定AIDL service
 ```
 private IPrinterService printerService;
 private ServiceConnection connService = new ServiceConnection() {
@@ -30,7 +32,7 @@ private ServiceConnection connService = new ServiceConnection() {
     public void onServiceDisconnected(ComponentName name) {
         showLog("printer service disconnected, try reconnect");
         printerService = null;
-        // rebind
+        // 尝试重新bind
         handler.postDelayed(() -> bindService(), 5000);
     }
 
@@ -52,11 +54,12 @@ private void unbindService() {
     unbindService(connService);
 }
 ```
+4. 使用`printerService`调用 AIDL接口中定义的⽅法进行打印
 
 ## Printer
 
-### Print text/bitmap/barcode
-PrintTextFormat: the bean class to custom text style, like text size, alignment, line spacing, custom font.
+### 打印文本/图片/条码
+[PrintTextFormat](app/src/main/java/com/posio/printerservice/print/PrintTextFormat.java): java bean类，设置打印文本样式，包括文本大小、文本样式、文本对齐方式、文本字库等
 ```
 try {
     PrintTextFormat textFormat = new PrintTextFormat();
@@ -73,7 +76,7 @@ try {
 }
 ```
 
-For custom print font, **font path needs to be set as a public path**. Font placed in `assets` directory or application private directory will not take effect
+自定义打印字库，**路径需要设置为公有路径**，字库放在`assets`目录或应用私有目录将不会生效
 ```
 try {
     PrintTextFormat textFormat = new PrintTextFormat();
@@ -85,7 +88,8 @@ try {
 }
 ```
 
-### Print table
+### 打印表格
+按表格排列形式打印，方便进行内容排版
 ```
 private void printTable() {
     singleThreadExecutor.submit(new Runnable() {
@@ -122,8 +126,8 @@ private void printTable() {
 }
 ```
 
-### Print ESC/POS commands
-For details about the common ESC instruction set, please see [ESC/POS Commands](https://download4.epson.biz/sec_pubs/pos/reference_en/escpos/commands.html)
+### 打印ESC/POS指令
+透传ESC/POS指令，ESC指令集可以参考 [ESC/POS](https://download4.epson.biz/sec_pubs/pos/reference_en/escpos/commands.html)
 ```
 private void printEscpos() {
     singleThreadExecutor.submit(new Runnable() {
@@ -154,12 +158,11 @@ private void printEscpos() {
 }
 ```
 
-### Print label
-There are two ways to print label
+### 打印标签
 
-#### 1. Know the exact dimensions of the label (pixels)
-The content of the printed label needs to be included between `printerService.labelLocate()` and `printerService.labelPrintEnd()`
-
+打印标签有两种方式
+#### 1. 清楚标签的具体尺寸（像素）
+打印标签内容需要被包含在 `printerService.labelLocate()` 和 `printerService.labelPrintEnd()` 中间
 ```
 private void printLabel() {
     singleThreadExecutor.submit(new Runnable() {
@@ -183,10 +186,10 @@ private void printLabel() {
     });
 }
 ```
-#### 2. Label learning
-Label learning will automatically output label paper for a certain distance to get the params about the label paper. After the interface returns successfully, include the printed content between `printerService.labelLocateAuto()` and `printerService.labelPrintEnd()`
-- `printerService.hasLabelLearning()`: whether the system has already performed label learning
-- `printerService.clearLabelLearning()`: clear the system storaged the label learning result
+#### 2. 标签自动检测，即标签学习
+标签学习会自动走出一段距离标签纸，用于检测标签纸尺寸等相关参数，待接口返回成功后，即可将打印内容包含在`printerService.labelLocateAuto()` 和 `printerService.labelPrintEnd()`中间
+- `printerService.hasLabelLearning()`：判断系统是否已经进行过相关学习
+- `printerService.clearLabelLearning()`：可以清除系统对标签相关参数的存储
 ```
 private void printLabelLearning() {
     singleThreadExecutor.submit(new Runnable() {
@@ -218,19 +221,18 @@ private void printLabelLearning() {
 }
 ```
 
-### Printer result
-All the printer interfaces will return the integer result, please refer to [SdkResult.java](app/src/main/java/com/posio/printerclient/SdkResult.java)
+### 打印结果
+所有打印接口都返回int类型结果，参考 [SdkResult.java](app/src/main/java/com/posio/printerclient/SdkResult.java) 对打印结果进行相关处理
 
+## 客显屏
+支持客显屏的设备可控制显示，无该模块的设备调用接口将会返回错误
 
-## LCD customer display
-Devices that support the customer display screen can control the LCD. Device without this module will return an error when calling the interface
-
-### LCD control
+### 客显控制
 ```
 // @param flag 0--init 1--wakeup LCD 2--sleep LCD 3--clear LCD 4--reset LCD display
 // int configLcd(int flag);
 
-// wakup
+// 唤醒
 singleThreadExecutor.submit(new Runnable() {
     @Override
     public void run() {
@@ -246,8 +248,7 @@ singleThreadExecutor.submit(new Runnable() {
         }
     }
 });
-
-// sleep
+// 休眠
 singleThreadExecutor.submit(new Runnable() {
     @Override
     public void run() {
@@ -264,7 +265,7 @@ singleThreadExecutor.submit(new Runnable() {
     }
 });
 
-// reset default display
+// 还原默认显示
 singleThreadExecutor.submit(new Runnable() {
     @Override
     public void run() {
@@ -282,10 +283,9 @@ singleThreadExecutor.submit(new Runnable() {
 });
 ```
 
-### LCD display
+### 客显显示
 
-**The size of the bitmap must be same as the size of the LCD. If the bitmap is smaller than the LCD, it will be shown in the center of LCD**
-
+**图片尺寸要与客显屏尺寸一致，小于客显屏的图片将居中显示**
 ```
 private void showLcdBitmap() {
     singleThreadExecutor.submit(new Runnable() {
@@ -300,6 +300,7 @@ private void showLcdBitmap() {
                 if (ret == 0) {
                     ret = printerService.showLcdBitmap(bitmap);
                 }
+                showLog("Show LCD bitmap: " + msg(ret));
             } catch (RemoteException e) {
                 e.printStackTrace();
             }
@@ -308,7 +309,7 @@ private void showLcdBitmap() {
 }
 ```
 
-### LCD default logo
+### 客显默认图片
 ```
 private void setLcdLogo() {
     singleThreadExecutor.submit(new Runnable() {
@@ -331,9 +332,10 @@ private void setLcdLogo() {
 }
 ```
 
-## Scanner
-### Camera scanner
-Just start a system activity to get built-in camera scanner. The capture surface cannot be customized.
+## 扫码
+
+### 摄像头扫描
+只需要启动系统活动即可获得内置相机扫描仪。该方式无法自定义扫码界面。
 
 ```
 private void scan() {
@@ -360,9 +362,9 @@ protected void onActivityResult(int requestCode, int resultCode, @Nullable Inten
 }
 ```    
 
-### Infrared scan
-    
-Register the system broadcast to get the infrared scan result
+### 红外线扫码
+
+注册系统广播以获得红外扫码结果    
     
 ```
 private final BroadcastReceiver qscReceiver = new BroadcastReceiver() {
@@ -372,7 +374,7 @@ private final BroadcastReceiver qscReceiver = new BroadcastReceiver() {
         if ("com.android.NYX_QSC_DATA".equals(intent.getAction())) {
             String qsc = intent.getStringExtra("qsc");
             showLog("qsc scan result: %s", qsc);
-            printText("qsc-quick-scan-code\n" + qsc);
+            printText("qsc-quick-scan-code/n" + qsc);
         }
 }
 };
@@ -388,7 +390,7 @@ private void unregisterQscReceiver() {
 }
 ```
 
-By default, infrared scan will be triggered by the side button. Here is the code for soft trigger
+默认情况下红外扫码由侧边实体按键触发，也提供软触发的接口
 ```
 private void infraredScan() {
     singleThreadExecutor.submit(new Runnable() {
@@ -405,9 +407,8 @@ private void infraredScan() {
 }
 ```
 
-## Cash box
-Devices that support the cash box can open. Device without this module will return an error when calling the interface
-
+## 钱箱
+仅支持钱箱的设备操作，无该模块的设备调用接口将会返回错误
 ```
 private void openCashBox() {
     singleThreadExecutor.submit(new Runnable() {
@@ -425,9 +426,8 @@ private void openCashBox() {
 ```
 
 ## NFC
-NFC uses the Android general NFC module, the specific introduction can refer to [Android NFC](https://developer.android.google.cn/guide/topics/connectivity/nfc)
+NFC使用Android通用NFC模块，具体介绍可参考[Android NFC](https://developer.android.google.cn/guide/topics/connectivity/nfc)
 
-Card reading can refer to the following projects
+读卡相关可以参考以下项目
 - [MifareClassicTool](https://github.com/ikarus23/MifareClassicTool)
 - [EMV-NFC-Paycard-Enrollment](https://github.com/devnied/EMV-NFC-Paycard-Enrollment)
-
