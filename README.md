@@ -1,4 +1,4 @@
-[中文文档](README-ZH.md)
+(README-ZH.md)
 
 PrinterClient
 ==========
